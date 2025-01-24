@@ -1,8 +1,6 @@
 const mongoose = require('mongoose')
 
-const password = process.argv[2]
-
-const url = `mongodb+srv://viclait:${password}@fullstackopen.omz4y.mongodb.net/phonebookApp?retryWrites=true&w=majority&appName=fullstackopen`
+const url = process.env.MONGODB_URI
 
 mongoose.set('strictQuery', false)
 
