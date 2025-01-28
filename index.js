@@ -1,7 +1,9 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 const app = express()
+const Person = require('./models/person')
 
 morgan.token('post-data', function (req, res) { 
   if (req.method === 'POST') {
@@ -38,47 +40,57 @@ let persons = [
   }
 ]
 
-app.get('/api/persons', (request, response) => {
-  response.json(persons)
+app.get('/api/persons', async (request, response) => {
+  try {
+    const persons = await Person.find({})
+    response.json(persons)
+  } catch (err) {
+    console.error("Error fetching personlist from DB: ", err.message)
+  }
 })
 
-app.get('/api/persons/:id', (request, response) => {
-  const id = request.params.id
-  person = persons.find(p => p.id === id)
-  if (person) {
+app.get('/api/persons/:id', async (request, response) => {
+  try {
+    const person = await Person.findById(request.params.id)
     response.json(person)
-  } else {
+  } catch (err) {
+    console.error("Error finding by id: ", err.message)
     response.status(404).end()
   }
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', async (request, response) => {
   const body = request.body
   if (!body.name || !body.number) {
     return response.status(400).json({
       error: !body.name ? 'name missing' : 'number missing'
     })
   }
-  const nameExists = persons.some(p => p.name === body.name);
+  /*const nameExists = persons.some(p => p.name === body.name);
   if (nameExists) {
     return response.status(409).json({
       error: 'name already exists'
     });
-  }
-  const randomId = String(Math.floor(Math.random() * 10000))
-  person = {
-    id: randomId,
+  }*/
+  const person = new Person({
     name: body.name,
     number: body.number
+  })
+  try {
+    const result = await person.save()
+    response.json(result)
+  } catch (err) {
+    console.error("Error saving to DB: ", err.message)
   }
-  persons = persons.concat(person)
-  response.json(person)
 })
 
-app.delete('/api/persons/:id', (request, response) => {
-  const id = request.params.id
-  persons = persons.filter(p => p.id !== id)
-  response.status(204).end()
+app.delete('/api/persons/:id', async (request, response) => {
+  try {
+    const result = await Person.findByIdAndDelete(request.params.id)
+    response.status(204).end()
+  } catch (err) {
+    console.error("Error deleting from DB: ", err.message)
+  }
 })
 
 app.get('/info', (request, response) => {
@@ -90,7 +102,7 @@ app.get('/info', (request, response) => {
   `)
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
