@@ -17,61 +17,39 @@ app.use(express.json())
 app.use(express.static('dist'))
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-data'))
 
-let persons = [
-  { 
-    "id": "1",
-    "name": "Arto Hellas", 
-    "number": "040-123456"
-  },
-  { 
-    "id": "2",
-    "name": "Ada Lovelace", 
-    "number": "39-44-5323523"
-  },
-  { 
-    "id": "3",
-    "name": "Dan Abramov", 
-    "number": "12-43-234345"
-  },
-  { 
-    "id": "4",
-    "name": "Mary Poppendieck", 
-    "number": "39-23-6423122"
-  }
-]
+const errorHandler = (error, request, response, next) => {
+  console.log(error.message)
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } 
+  next(error)
+}
 
-app.get('/api/persons', async (request, response) => {
+app.get('/api/persons', async (request, response, next) => {
   try {
     const persons = await Person.find({})
     response.json(persons)
   } catch (err) {
-    console.error("Error fetching personlist from DB: ", err.message)
+    next(err)
   }
 })
 
-app.get('/api/persons/:id', async (request, response) => {
+app.get('/api/persons/:id', async (request, response, next) => {
   try {
     const person = await Person.findById(request.params.id)
     response.json(person)
   } catch (err) {
-    console.error("Error finding by id: ", err.message)
-    response.status(404).end()
+    next(err)
   }
 })
 
-app.post('/api/persons', async (request, response) => {
+app.post('/api/persons', async (request, response, next) => {
   const body = request.body
   if (!body.name || !body.number) {
     return response.status(400).json({
       error: !body.name ? 'name missing' : 'number missing'
     })
   }
-  /*const nameExists = persons.some(p => p.name === body.name);
-  if (nameExists) {
-    return response.status(409).json({
-      error: 'name already exists'
-    });
-  }*/
   const person = new Person({
     name: body.name,
     number: body.number
@@ -80,16 +58,30 @@ app.post('/api/persons', async (request, response) => {
     const result = await person.save()
     response.json(result)
   } catch (err) {
-    console.error("Error saving to DB: ", err.message)
+    next(err)
   }
 })
 
-app.delete('/api/persons/:id', async (request, response) => {
+app.put('/api/persons/:id', async (request, response, next) => {
   try {
-    const result = await Person.findByIdAndDelete(request.params.id)
+    const body = request.body
+    const person = {
+      name: body.name,
+      number: body.number
+    }
+    const updatedPerson = await Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    response.json(updatedPerson)
+  } catch (err) {
+    next(err)
+  }
+})
+
+app.delete('/api/persons/:id', async (request, response, next) => {
+  try {
+    await Person.findByIdAndDelete(request.params.id)
     response.status(204).end()
   } catch (err) {
-    console.error("Error deleting from DB: ", err.message)
+    next(err)
   }
 })
 
@@ -101,6 +93,8 @@ app.get('/info', (request, response) => {
     <div>${timeReceived}</div>
   `)
 })
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
