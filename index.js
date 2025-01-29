@@ -85,10 +85,11 @@ app.delete('/api/persons/:id', async (request, response, next) => {
   }
 })
 
-app.get('/info', (request, response) => {
+app.get('/info', async (request, response) => {
   const timeReceived = new Date()
+  const personCount = await Person.countDocuments()
   response.send(`
-    <div>Phonebook has info for ${persons.length} people</div>
+    <div>Phonebook has info for ${personCount} people</div>
     <br/>
     <div>${timeReceived}</div>
   `)
