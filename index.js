@@ -5,7 +5,7 @@ const cors = require('cors')
 const app = express()
 const Person = require('./models/person')
 
-morgan.token('post-data', function (req, res) { 
+morgan.token('post-data', function (req) {
   if (req.method === 'POST') {
     return JSON.stringify(req.body)
   }

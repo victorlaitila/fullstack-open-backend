@@ -12,12 +12,12 @@ const personSchema = new mongoose.Schema({
   name: String,
   number: String
 })
-  
+
 const Person = mongoose.model('Person', personSchema)
 
 // If only password is given, print the existing phonebook entries
 if (process.argv.length === 3) {
-  console.log("phonebook:")
+  console.log('phonebook:')
   Person.find({}).then(result => {
     result.forEach(person => {
       console.log(person.name, person.number)
